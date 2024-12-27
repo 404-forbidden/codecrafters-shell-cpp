@@ -109,6 +109,9 @@ int main() {
                         }
                     }
                 }
+            }},
+            {"pwd", [](const std::string &input) {
+                std::cout << fs::current_path().string() << std::endl;
             }}
     };
 
