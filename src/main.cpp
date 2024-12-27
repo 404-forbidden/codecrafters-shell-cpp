@@ -2,6 +2,9 @@
 #include <map>
 #include <functional>
 #include <filesystem>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <cstring>
 
 namespace fs = std::filesystem;
 
@@ -31,6 +34,45 @@ std::string find_executable(const std::string& cmd) {
     return "";
 }
 
+std::vector<std::string> split_command(const std::string& input) {
+    std::vector<std::string> args;
+    std::stringstream ss(input);
+    std::string arg;
+
+    while (ss >> arg) {
+        args.push_back(arg);
+    }
+
+    return args;
+}
+
+void execute_external_command(const std::string& input) {
+    std::vector<std::string> args = split_command(input);
+    if (args.empty()) return;
+
+    std::string program_path = find_executable(args[0]);
+    if (program_path.empty()) {
+        std::cout << args[0] << ": command not found" << std::endl;
+        return;
+    }
+
+    pid_t pid = fork();
+    if (pid == 0) {  // Child process
+        std::vector<char*> c_args;
+        for (const auto& arg : args) {
+            c_args.push_back(strdup(arg.c_str()));
+        }
+        c_args.push_back(nullptr);
+
+        execv(program_path.c_str(), c_args.data());
+        exit(1);  // execv only returns on error
+    }
+    else if (pid > 0) {  // Parent process
+        int status;
+        waitpid(pid, &status, 0);
+    }
+}
+
 int main() {
     // Flush after every std::cout / std:cerr
     std::cout << std::unitbuf;
@@ -51,29 +93,23 @@ int main() {
                     std::string text = input.substr(pos + 1);
                     std::cout << text << std::endl;
                 }
+            }},
+            {"type", [&commands](const std::string& input) {
+                size_t pos = input.find(' ');
+                if (pos != std::string::npos) {
+                    std::string cmd = input.substr(pos + 1);
+                    if (commands.count(cmd)) {
+                        std::cout << cmd << " is a shell builtin" << std::endl;
+                    } else {
+                        std::string path = find_executable(cmd);
+                        if (!path.empty()) {
+                            std::cout << cmd << " is " << path << std::endl;
+                        } else {
+                            std::cout << cmd << ": not found" << std::endl;
+                        }
+                    }
+                }
             }}
-    };
-    commands["type"] = [&commands](const std::string& input) {
-        size_t pos = input.find(' ');
-        if (pos != std::string::npos) {
-            std::string cmd = input.substr(pos + 1);
-
-            // builtin
-            if (commands.count(cmd)) {
-                std::cout << cmd << " is a shell builtin" << std::endl;
-            }
-            else {
-                // PATH
-                std::string path = find_executable(cmd);
-                if (!path.empty()) {
-                    std::cout << cmd << " is " << path << std::endl;
-                }
-                // not exists
-                else {
-                    std::cout << cmd << ": not found" << std::endl;
-                }
-            }
-        }
     };
 
     // REPL (Read-Eval-Print Loop)
@@ -88,7 +124,7 @@ int main() {
             commands[cmd](input);
         }
         else {
-            std::cout << input << ": command not found" << std::endl;
+            execute_external_command(input);
         }
     }
 }
