@@ -120,14 +120,36 @@ int main() {
 
             // change directory
             {"cd", [](const std::string &input) {
+                const char* home = std::getenv("HOME");
                 size_t pos = input.find(' ');
+                std::string path;
+
                 if (pos != std::string::npos) {
-                    std::string path = input.substr(pos + 1);
-                    try {
-                        fs::current_path(path);
-                    } catch (const fs::filesystem_error& e) {
-                        std::cerr << "cd: " << path << ": No such file or directory" << std::endl;
+                    path = input.substr(pos + 1);
+
+                    // start with '~'
+                    if (path[0] == '~') {
+                        if (home != nullptr) {
+                            if (path == "~") {
+                                path = home;
+                            }
+                            else {
+                                path = std::string(home) + path.substr(1);
+                            }
+                        }
                     }
+                }
+                // without argument
+                else {
+                    if (home != nullptr) {
+                        path = home;
+                    }
+                }
+
+                try {
+                    fs::current_path(path);
+                } catch (const fs::filesystem_error& e) {
+                    std::cerr << "cd: " << path << ": No such file or directory" << std::endl;
                 }
             }}
     };
