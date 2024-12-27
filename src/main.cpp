@@ -10,7 +10,7 @@ std::vector<std::string> split_path(const std::string& path) {
     std::stringstream ss(path);
     std::string dir;
 
-    while (std::getline(ss, dir, ';')) { //  Windows uses ';' as a separator, while Linux uses ':'.
+    while (std::getline(ss, dir, ':')) { //  Windows uses ';' as a separator, while Linux uses ':'.
         directories.push_back(dir);
     }
 
