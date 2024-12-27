@@ -1,27 +1,43 @@
 #include <iostream>
+#include <map>
+#include <functional>
 
 int main() {
-  // Flush after every std::cout / std:cerr
-  std::cout << std::unitbuf;
-  std::cerr << std::unitbuf;
+    // Flush after every std::cout / std:cerr
+    std::cout << std::unitbuf;
+    std::cerr << std::unitbuf;
 
-  // REPL (Read-Eval-Print Loop)
-  while(true) {
-      // Uncomment this block to pass the first stage
-      std::cout << "$ ";
+    // commands
+    std::map<std::string, std::function<void(const std::string &)>> commands = {
+            {"exit", [](const std::string &input) {
+                size_t pos = input.find(' ');
+                if (pos != std::string::npos) {
+                    std::string exitCode = input.substr(pos + 1);
+                    exit(std::stoi(exitCode));
+                }
+            }},
+            {"echo", [](const std::string &input) {
+                size_t pos = input.find(' ');
+                if (pos != std::string::npos) {
+                    std::string text = input.substr(pos + 1);
+                    std::cout << text << std::endl;
+                }
+            }}
+    };
 
-      std::string input;
-      std::getline(std::cin, input);
+    // REPL (Read-Eval-Print Loop)
+    while (true) {
+        std::cout << "$ ";
 
-      // exit
-      if (input.substr(0, 4) == "exit") {
-          size_t spacePos = input.find(' ');
-          if (spacePos != std::string::npos) {
-              std::string exitCode = input.substr(spacePos + 1);
-              exit(std::stoi(exitCode));
-          }
-      }
+        std::string input;
+        std::getline(std::cin, input);
 
-      std::cout << input << ": command not found" << std::endl;
-  }
+        std::string cmd = input.substr(0, input.find(' '));
+        if (commands.count(cmd)) {
+            commands[cmd](input);
+        }
+        else {
+            std::cout << input << ": command not found" << std::endl;
+        }
+    }
 }
