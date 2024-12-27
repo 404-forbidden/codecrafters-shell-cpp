@@ -110,8 +110,25 @@ int main() {
                     }
                 }
             }},
+
+        // Navigation
+
+            // print working directory
             {"pwd", [](const std::string &input) {
                 std::cout << fs::current_path().string() << std::endl;
+            }},
+
+            // change directory
+            {"cd", [](const std::string &input) {
+                size_t pos = input.find(' ');
+                if (pos != std::string::npos) {
+                    std::string path = input.substr(pos + 1);
+                    try {
+                        fs::current_path(path);
+                    } catch (const fs::filesystem_error& e) {
+                        std::cerr << "cd: " << path << ": No such file or directory" << std::endl;
+                    }
+                }
             }}
     };
 
