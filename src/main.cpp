@@ -24,6 +24,17 @@ int main() {
                 }
             }}
     };
+    commands["type"] = [&commands](const std::string& input) {
+        size_t pos = input.find(' ');
+        if (pos != std::string::npos) {
+            std::string cmd = input.substr(pos + 1);
+            if (commands.count(cmd)) {
+                std::cout << cmd << " is a shell builtin" << std::endl;
+            } else {
+                std::cout << cmd << ": not found" << std::endl;
+            }
+        }
+    };
 
     // REPL (Read-Eval-Print Loop)
     while (true) {
