@@ -39,15 +39,64 @@ std::vector<std::string> parse_command(const std::string& input) {
     std::string current_arg;
     bool in_quotes = false;
     char quote_char = 0;
+    bool escaping = false; // whether the previous char was an escape
 
     for (size_t i = 0; i < input.length(); i++) {
         char c = input[i];
 
-        if ((c == '\'' || c == '"') && (!in_quotes || c == quote_char)) {
-            if (in_quotes) {
-                in_quotes = false;
-                quote_char = 0;
+        if (escaping) {
+            if (in_quotes && quote_char == '"') {
+                if (c == '\\' || c == '"' || c == '$') {
+                    current_arg += c;
+                } else {
+                    current_arg += '\\';
+                    current_arg += c;
+                }
             } else {
+                current_arg += c;
+            }
+            escaping = false;
+            continue;
+        }
+
+        if (c == '\\') {
+            // in double quotes
+            if (in_quotes && quote_char == '"') {
+                if (i + 1 < input.length()) {
+                    char next = input[i + 1];
+                    if (next == '\\' || next == '"' || next == '$') {
+                        escaping = true;
+                    }
+                    else {
+                        current_arg += c;
+                    }
+                }
+                else {
+                    current_arg += c;
+                }
+            }
+            // outside of quotes
+            else if (!in_quotes) {
+                escaping = true;
+            }
+            // in single quotes
+            else {
+                current_arg += c;
+            }
+            continue;
+        }
+
+        if ((c == '\'' || c == '"') && !escaping) {
+            if (in_quotes) {
+                if (c == quote_char) {
+                    in_quotes = false;
+                    quote_char = 0;
+                }
+                else {
+                    current_arg += c;
+                }
+            }
+            else {
                 in_quotes = true;
                 quote_char = c;
             }
@@ -59,7 +108,8 @@ std::vector<std::string> parse_command(const std::string& input) {
                 args.push_back(current_arg);
                 current_arg.clear();
             }
-        } else {
+        }
+        else {
             current_arg += c;
         }
     }
@@ -84,8 +134,9 @@ void execute_external_command(const std::string& input) {
     pid_t pid = fork();
     if (pid == 0) {  // Child process
         std::vector<char*> c_args;
-        for (const auto& arg : args) {
-            c_args.push_back(strdup(arg.c_str()));
+        c_args.push_back(strdup(args[0].c_str()));
+        for (size_t i = 1; i < args.size(); i++) {
+            c_args.push_back(strdup(args[i].c_str()));
         }
         c_args.push_back(nullptr);
 
@@ -100,7 +151,7 @@ void execute_external_command(const std::string& input) {
 
 int main() {
     // Flush after every std::cout / std:cerr
-    std::cout << std::unitbuf;
+    std::cout<< std::unitbuf;
     std::cerr << std::unitbuf;
 
     // commands
