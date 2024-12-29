@@ -115,7 +115,17 @@ int main() {
             {"echo", [](const std::string &input) {
                 size_t pos = input.find(' ');
                 if (pos != std::string::npos) {
-                    std::cout << input.substr(pos + 1) << std::endl;
+                    // Extract everything after "echo "
+                    std::string text = input.substr(pos + 1);
+
+                    // Remove quotes if they exist at the start and end
+                    if (text.size() >= 2 &&
+                        ((text.front() == '\'' && text.back() == '\'') ||
+                         (text.front() == '"' && text.back() == '"'))) {
+                        text = text.substr(1, text.size() - 2);
+                    }
+
+                    std::cout << text << std::endl;
                 }
             }},
             {"type", [&commands](const std::string& input) {
