@@ -115,17 +115,16 @@ int main() {
             {"echo", [](const std::string &input) {
                 size_t pos = input.find(' ');
                 if (pos != std::string::npos) {
-                    // Extract everything after "echo "
                     std::string text = input.substr(pos + 1);
-
-                    // Remove quotes if they exist at the start and end
-                    if (text.size() >= 2 &&
-                        ((text.front() == '\'' && text.back() == '\'') ||
-                         (text.front() == '"' && text.back() == '"'))) {
-                        text = text.substr(1, text.size() - 2);
+                    auto args = parse_command(text);
+                    if (!args.empty()) {
+                        // Join all arguments with a single space
+                        std::cout << args[0];
+                        for (size_t i = 1; i < args.size(); i++) {
+                            std::cout << " " << args[i];
+                        }
                     }
-
-                    std::cout << text << std::endl;
+                    std::cout << std::endl;
                 }
             }},
             {"type", [&commands](const std::string& input) {
